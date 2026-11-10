@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jeevan Pramaan — plain-language rejection prototype</title>
+<style>
+  :root{
+    --ink:#1c1c1a;
+    --muted:#5f5e5a;
+    --bg:#f7f6f2;
+    --card:#ffffff;
+    --red:#a32d2d;
+    --red-bg:#fcebeb;
+    --green:#0f6e56;
+    --green-bg:#e1f5ee;
+    --amber:#854f0b;
+    --amber-bg:#faeeda;
+    --border:#d3d1c7;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:24px 16px 60px;
+  }
+  header{ width:100%; max-width:420px; margin-bottom:16px; }
+  h1{ font-size:18px; font-weight:600; margin:0 0 4px; }
+  .sub{ font-size:14px; color:var(--muted); margin:0; }
+
+  .toggle-row{
+    width:100%; max-width:420px;
+    display:flex; align-items:center; justify-content:space-between;
+    background:var(--card); border:1px solid var(--border); border-radius:12px;
+    padding:12px 16px; margin-bottom:12px; font-size:15px;
+  }
+  .switch{ position:relative; width:52px; height:30px; flex-shrink:0; }
+  .switch input{opacity:0;width:0;height:0;}
+  .slider{ position:absolute;inset:0; background:#b4b2a9; border-radius:30px; cursor:pointer; transition:.2s; }
+  .slider:before{ content:""; position:absolute; height:24px;width:24px; left:3px;top:3px; background:white; border-radius:50%; transition:.2s; }
+  input:checked + .slider{background:var(--green);}
+  input:checked + .slider:before{transform:translateX(22px);}
+
+  .phone{
+    width:100%; max-width:340px; min-height:560px;
+    background:var(--card); border:1px solid var(--border); border-radius:28px;
+    padding:28px 24px; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    text-align:center; box-shadow:0 2px 14px rgba(0,0,0,0.06);
+  }
+  .icon{ width:88px;height:88px; border-radius:50%; display:flex;align-items:center;justify-content:center; margin-bottom:28px; }
+  .icon svg{width:46px;height:46px;}
+  .icon.err{background:var(--red-bg);}
+  .icon.warn{background:var(--amber-bg);}
+  .icon.ok{background:var(--green-bg);}
+
+  .camera-box{
+    width:220px;height:220px; border-radius:16px; background:#111;
+    display:flex;align-items:center;justify-content:center;
+    margin-bottom:20px; position:relative; overflow:hidden;
+  }
+  .camera-box video{ width:100%; height:100%; object-fit:cover; transform:scaleX(-1); }
+  .camera-box .oval{
+    position:absolute; width:120px;height:150px;
+    border:3px dashed rgba(255,255,255,0.55); border-radius:50%; pointer-events:none;
+  }
+  .camera-box .placeholder-icon{ opacity:.5; }
+  .camera-box .placeholder-icon svg{ width:64px;height:64px; }
+
+  .cam-status{ font-size:13px; color:var(--muted); margin:-12px 0 20px; min-height:16px; }
+
+  h2{ font-size:25px; font-weight:700; margin:0 0 12px; line-height:1.25; }
+  p.detail{ font-size:17px; color:var(--muted); line-height:1.5; margin:0 0 28px; max-width:260px; }
+  button.primary{
+    width:100%; max-width:260px; min-height:58px; border:none; border-radius:14px;
+    font-size:18px; font-weight:600; color:white; cursor:pointer;
+  }
+  button.primary.cta{background:var(--ink);}
+  button.primary.retake{background:var(--green);}
+  button.primary.retry{background:var(--red);}
+  button.primary.done{background:var(--green);}
+  button.primary.secondary{background:var(--muted);}
+  button.primary:active{opacity:.85;}
+  button.primary:disabled{opacity:.5; cursor:not-allowed;}
+
+  .hint{ margin-top:16px; font-size:13px; color:var(--muted); }
+
+  .panel{
+    width:100%; max-width:420px; margin-top:16px;
+    background:var(--card); border:1px solid var(--border); border-radius:14px; overflow:hidden;
+  }
+  .panel-head{
+    width:100%; display:flex; align-items:center; justify-content:space-between;
+    padding:14px 18px; background:none; border:none; cursor:pointer;
+    font-size:15px; font-weight:600; color:var(--ink); text-align:left;
+  }
+  .panel-head .chev{ transition:transform .2s; color:var(--muted); font-size:14px; }
+  .panel-head.open .chev{ transform:rotate(180deg); }
+  .panel-body{
+    max-height:0; overflow:hidden; transition:max-height .25s ease;
+    padding:0 18px;
+  }
+  .panel-body.open{ max-height:900px; padding-bottom:18px; }
+  .quote-block{ margin-bottom:16px; }
+  .quote-label{
+    font-size:11px; text-transform:uppercase; letter-spacing:.04em;
+    color:var(--muted); font-weight:600; margin-bottom:4px;
+  }
+  .quote-text{ font-size:15px; line-height:1.5; color:var(--ink); }
+  .quote-text.say{ font-style:italic; }
+  .quote-note{ font-size:12px; color:var(--muted); margin-top:16px; line-height:1.5; }
+
+  footer{ margin-top:22px; font-size:12px; color:var(--muted); max-width:340px; text-align:center; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Jeevan Pramaan prototype</h1>
+  <p class="sub">Idea: a specific, plain-language reason instead of a generic rejection</p>
+</header>
+
+<div class="toggle-row">
+  <span>Compare with old version</span>
+  <label class="switch">
+    <input type="checkbox" id="oldToggle">
+    <span class="slider"></span>
+  </label>
+</div>
+
+<div class="phone" id="phone"></div>
+
+<div class="panel">
+  <button class="panel-head" id="panelHead">
+    <span>Why this matters — Viswan's experience</span>
+    <span class="chev">▾</span>
+  </button>
+  <div class="panel-body" id="panelBody">
+    <div class="quote-block">
+      <div class="quote-label">Says</div>
+      <div class="quote-text say">"The photo looks fine to me — I don't know what's wrong with it."</div>
+    </div>
+    <div class="quote-block">
+      <div class="quote-label">Thinks</div>
+      <div class="quote-text">Believes the rejection is his own fault, since the system never explains the actual reason.</div>
+    </div>
+    <div class="quote-block">
+      <div class="quote-label">Feels</div>
+      <div class="quote-text">Anxiety about missing the deadline, and frustration after repeated failed attempts.</div>
+    </div>
+    <div class="quote-block">
+      <div class="quote-label">Does</div>
+      <div class="quote-text">Retries the same photo several times, guessing at what to change, before asking a family member to take over.</div>
+    </div>
+    <div class="quote-note">
+      From the Empathy Map and User Persona built for this project — not a literal transcript, but the research this prototype is designed around.
+    </div>
+  </div>
+</div>
+
+<footer>
+  Lo-fi functional prototype — demonstrates Idea #1 from the Idea Selection Matrix (Page 25).
+  Uses your device camera locally to measure real brightness; nothing is uploaded or stored anywhere.
+</footer>
+
+<canvas id="captureCanvas" style="display:none;"></canvas>
+
+<script>
+const ICON_X = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>`;
+const ICON_CHECK = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="4,13 9,18 20,6"/></svg>`;
+const ICON_CAMERA = `<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h3l2-3h6l2 3h3v12H4z"/><circle cx="12" cy="13" r="4"/></svg>`;
+const ICON_SUN = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="4" y1="12" x2="2" y2="12"/><line x1="22" y1="12" x2="20" y2="12"/><line x1="19.07" y1="4.93" x2="17.66" y2="6.34"/><line x1="6.34" y1="17.66" x2="4.93" y2="19.07"/><line x1="19.07" y1="19.07" x2="17.66" y2="17.66"/><line x1="6.34" y1="6.34" x2="4.93" y2="4.93"/></svg>`;
+
+let state = "capture"; // capture -> rejected -> success
+let currentReason = null;
+let stream = null;
+let cameraReady = false;
+
+const phone = document.getElementById("phone");
+const oldToggle = document.getElementById("oldToggle");
+const canvas = document.getElementById("captureCanvas");
+const ctx = canvas.getContext("2d", { willReadFrequently: true });
+
+const REASON = {
+  dark:  { title: "Photo too dark",        detail: "Move to a brighter spot and take the photo again.", icon: "err" },
+  glare: { title: "Too much glare",        detail: "Step away from bright light behind you and take the photo again.", icon: "warn" },
+  ok:    { title: "Face not fully visible",detail: "Make sure your whole face is inside the circle, then try again.", icon: "err" }
+};
+
+function startCamera(videoEl) {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    return Promise.reject(new Error("not-supported"));
+  }
+  return navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false })
+    .then(s => {
+      stream = s;
+      videoEl.srcObject = s;
+      cameraReady = true;
+      return videoEl.play();
+    });
+}
+
+function stopCamera() {
+  if (stream) {
+    stream.getTracks().forEach(t => t.stop());
+    stream = null;
+  }
+  cameraReady = false;
+}
+
+function measureBrightness(videoEl) {
+  const w = 160, h = 160;
+  canvas.width = w; canvas.height = h;
+  ctx.drawImage(videoEl, 0, 0, w, h);
+  const data = ctx.getImageData(0, 0, w, h).data;
+  let total = 0, count = 0;
+  for (let i = 0; i < data.length; i += 16) { // sample every 4th pixel
+    const r = data[i], g = data[i+1], b = data[i+2];
+    total += 0.2126*r + 0.7152*g + 0.0722*b;
+    count++;
+  }
+  return total / count; // 0-255
+}
+
+function decideReason(brightness) {
+  if (brightness < 70) return REASON.dark;
+  if (brightness > 200) return REASON.glare;
+  return null; // lighting fine
+}
+
+function render() {
+  const showOld = oldToggle.checked;
+
+  if (state === "capture") {
+    phone.innerHTML = `
+      <div class="camera-box" id="camBox">
+        <div class="placeholder-icon" id="camPlaceholder">${ICON_CAMERA}</div>
+        <div class="oval"></div>
+      </div>
+      <div class="cam-status" id="camStatus">Starting camera…</div>
+      <h2>Take your photo</h2>
+      <p class="detail">Hold the phone steady and look at the camera.</p>
+      <button class="primary cta" id="captureBtn" disabled>Take Photo</button>
+    `;
+    const camBox = document.getElementById("camBox");
+    const statusEl = document.getElementById("camStatus");
+    const captureBtn = document.getElementById("captureBtn");
+
+    const video = document.createElement("video");
+    video.autoplay = true; video.playsInline = true; video.muted = true;
+    camBox.insertBefore(video, camBox.firstChild);
+
+    startCamera(video).then(() => {
+      document.getElementById("camPlaceholder").style.display = "none";
+      statusEl.textContent = "Camera live — this reads real brightness from your feed.";
+      captureBtn.disabled = false;
+    }).catch(() => {
+      statusEl.textContent = "Camera unavailable — using a simulated attempt instead.";
+      captureBtn.disabled = false;
+    });
+
+    captureBtn.onclick = () => {
+      let reason;
+      if (cameraReady) {
+        const brightness = measureBrightness(video);
+        reason = decideReason(brightness);
+        if (!reason) {
+          // lighting is fine on a real feed — still show the "face" case
+          // about 1 in 3 times, to demonstrate all three reasons; otherwise succeed
+          reason = Math.random() < 0.3 ? REASON.ok : null;
+        }
+      } else {
+        const pool = [REASON.dark, REASON.glare, REASON.ok];
+        reason = pool[Math.floor(Math.random() * pool.length)];
+      }
+      stopCamera();
+      if (reason) {
+        currentReason = reason;
+        state = "rejected";
+      } else {
+        state = "success";
+      }
+      render();
+    };
+    return;
+  }
+
+  if (state === "rejected") {
+    if (showOld) {
+      phone.innerHTML = `
+        <div class="icon err" style="color:var(--red)">${ICON_X}</div>
+        <h2>Verification Failed</h2>
+        <p class="detail">Please try again.</p>
+        <button class="primary retry" id="retryBtn">Retry</button>
+        <div class="hint">(today's version — no reason given)</div>
+      `;
+      document.getElementById("retryBtn").onclick = () => { state = "capture"; render(); };
+    } else {
+      const iconClass = currentReason.icon;
+      const iconColor = iconClass === "warn" ? "var(--amber)" : "var(--red)";
+      const iconSvg = iconClass === "warn" ? ICON_SUN : ICON_X;
+      phone.innerHTML = `
+        <div class="icon ${iconClass}" style="color:${iconColor}">${iconSvg}</div>
+        <h2>${currentReason.title}</h2>
+        <p class="detail">${currentReason.detail}</p>
+        <button class="primary retake" id="retakeBtn">Retake Photo</button>
+      `;
+      document.getElementById("retakeBtn").onclick = () => { state = "capture"; render(); };
+    }
+    return;
+  }
+
+  if (state === "success") {
+    phone.innerHTML = `
+      <div class="icon ok" style="color:var(--green)">${ICON_CHECK}</div>
+      <h2>Certificate submitted</h2>
+      <p class="detail">Your life certificate has been submitted successfully.</p>
+      <button class="primary done" id="doneBtn">Done</button>
+    `;
+    document.getElementById("doneBtn").onclick = () => { state = "capture"; render(); };
+    return;
+  }
+}
+
+oldToggle.addEventListener("change", render);
+render();
+
+// expand/collapse the Viswan panel
+const panelHead = document.getElementById("panelHead");
+const panelBody = document.getElementById("panelBody");
+panelHead.addEventListener("click", () => {
+  panelHead.classList.toggle("open");
+  panelBody.classList.toggle("open");
+});
+</script>
+
+</body>
+</html>
